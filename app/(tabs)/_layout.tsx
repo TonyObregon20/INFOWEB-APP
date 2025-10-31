@@ -1,35 +1,23 @@
+// app/(tabs)/_layout.tsx
 import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
+        tabBarActiveTintColor: '#FFA500',
+        tabBarInactiveTintColor: '#888',
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          height: 60,
+        },
+      }}
+    >
+      <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
+      <Tabs.Screen name="Servicios" options={{ title: 'Servicios' }} />
+      <Tabs.Screen name="casas" options={{ title: 'Casas' }} />
+      <Tabs.Screen name="nosotros" options={{ title: 'Nosotros' }} />
+      <Tabs.Screen name="contacto" options={{ title: 'Contacto' }} />
     </Tabs>
   );
 }
