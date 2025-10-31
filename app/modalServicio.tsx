@@ -1,3 +1,4 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -23,6 +24,8 @@ export default function ServiceScreen() {
   const [email, setEmail] = useState('');
   const [telefono, setTelefono] = useState('');
   const [fecha, setFecha] = useState('');
+  const [fechaDate, setFechaDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [localField, setLocalField] = useState('');
   const [mensaje, setMensaje] = useState('');
   const [sending, setSending] = useState(false);
@@ -37,26 +40,53 @@ export default function ServiceScreen() {
 
   const mainImage = service.images?.[index]?.imageId ? `${API_BASE_URL}/api/images/${service.images[index].imageId}` : undefined;
 
+  const formatDMY = (d: Date) => {
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  };
+
+  const parseDMY = (s: string): Date | null => {
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!m) return null;
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10) - 1;
+    const year = parseInt(m[3], 10);
+    const d = new Date(year, month, day);
+    // basic sanity check
+    if (d.getFullYear() !== year || d.getMonth() !== month || d.getDate() !== day) return null;
+    return d;
+  };
+
   const handleSubmit = async () => {
-    if (!nombre || !email || !fecha) {
+    // normalize fecha to ISO yyyy-mm-dd for backend
+    let fechaForPayload = fecha;
+    if (!fechaForPayload && fechaDate) {
+      fechaForPayload = fechaDate.toISOString().split('T')[0];
+    } else if (fechaForPayload && fechaForPayload.includes('/')) {
+      const parsed = parseDMY(fechaForPayload);
+      if (parsed) fechaForPayload = parsed.toISOString().split('T')[0];
+    }
+
+    if (!nombre || !email || !fechaForPayload) {
       Alert.alert('Faltan campos', 'Completa todos los campos');
       return;
     }
 
     const payload = {
-      servicio: service?.name || 'Servicio',
-      servicioId: service?._id,
-      nombre,
+      name: nombre,
       email,
-      telefono,
-      fecha,
-      lugar: localField,
-      mensaje,
+      phone: telefono || '',
+      eventDate: fechaForPayload,
+      house: localField || '',
+      message: mensaje || '',
+      serviceId: service?._id,
     };
 
     try {
       setSending(true);
-      const res = await fetch(`${API_BASE_URL}/api/solicitudes`, {
+      const res = await fetch(`${API_BASE_URL}/api/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -90,17 +120,40 @@ export default function ServiceScreen() {
             <Text style={styles.label}>Servicio</Text>
             <TextInput style={[styles.input, styles.disabled]} value={service.name} editable={false} />
 
-            <Text style={styles.label}>Nombre*</Text>
+            <Text style={styles.label}>Nombre *</Text>
             <TextInput style={styles.input} value={nombre} onChangeText={setNombre} placeholder="Tu nombre" />
 
-            <Text style={styles.label}>Email*</Text>
+            <Text style={styles.label}>Email *</Text>
             <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder="tu@correo.com" keyboardType="email-address" />
 
-            <Text style={styles.label}>Teléfono</Text>
+            <Text style={styles.label}>Teléfono </Text>
             <TextInput style={styles.input} value={telefono} onChangeText={setTelefono} placeholder="999123456" keyboardType="phone-pad" />
 
-            <Text style={styles.label}>Fecha del evento*</Text>
-            <TextInput style={styles.input} value={fecha} onChangeText={setFecha} placeholder={Platform.OS === 'web' ? 'dd/mm/aaaa' : 'AAAA-MM-DD'} />
+            <Text style={styles.label}>Fecha del evento *</Text>
+            {Platform.OS === 'web' ? (
+              <TextInput style={styles.input} value={fecha} onChangeText={(text) => { setFecha(text); const p = parseDMY(text); setFechaDate(p); }} placeholder={'dd/mm/aaaa'} />
+            ) : (
+              <>
+                <TouchableOpacity style={[styles.input, { justifyContent: 'center' }]} onPress={() => setShowDatePicker(true)}>
+                  <Text>{fechaDate ? formatDMY(fechaDate) : 'Seleccionar fecha'}</Text>
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={fechaDate || new Date()}
+                    mode="date"
+                    display="default"
+                    onChange={(_event: any, selectedDate?: Date | undefined) => {
+                      setShowDatePicker(false);
+                      if (selectedDate) {
+                        const d = selectedDate as Date;
+                        setFechaDate(d);
+                        setFecha(d.toISOString().split('T')[0]);
+                      }
+                    }}
+                  />
+                )}
+              </>
+            )}
 
             <Text style={styles.label}>Casa / local (opcional)</Text>
             <TextInput style={styles.input} value={localField} onChangeText={setLocalField} placeholder="Ej: Casa Miraflores" />
