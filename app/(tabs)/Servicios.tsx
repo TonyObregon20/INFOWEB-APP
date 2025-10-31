@@ -1,6 +1,8 @@
 // app/(tabs)/servicios.tsx
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { setSelectedService } from '@/utils/selectedService';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define el tipo de un servicio
 interface Service {
@@ -11,18 +13,19 @@ interface Service {
   description: string;
   capacityMin: number;
   capacityMax: number;
-  images: Array<{
+  images: {
     imageId: string;
     alt?: string;
     isCover?: boolean;
     order?: number;
-  }>;
+  }[];
   createdAt: string;
   updatedAt: string;
 }
 
 // ⚠️ Reemplaza esta URL con la tuya real (usa tu IP local en desarrollo)
-const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
+// const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
+const API_BASE_URL = 'http://192.168.0.181:5000';
 
 export default function ServiciosScreen() {
   const [servicios, setServicios] = useState<Service[]>([]);
@@ -108,7 +111,14 @@ export default function ServiciosScreen() {
             <Text style={styles.price}>
               {servicio.basePrice > 0 ? `Desde: S/ ${servicio.basePrice.toLocaleString()}` : 'Precio a consultar'}
             </Text>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                setSelectedService(servicio);
+                // Open the modal for service details
+                router.push('/modalServicio' as any);
+              }}
+            >
               <Text style={styles.buttonText}>Ver detalle</Text>
             </TouchableOpacity>
           </View>
