@@ -1,6 +1,8 @@
 // app/(tabs)/casas.tsx
-import { View, Text, ScrollView, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { setSelectedCasa } from '@/utils/selectedCasa';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define el tipo de una casa
 interface Casa {
@@ -12,13 +14,13 @@ interface Casa {
   horaFinEvento: string;
   detalles: string;
   precioDesde: number;
-  imagenes: Array<{
+  imagenes: {
     url: string;
     thumb?: string;
     publicId?: string;
     isCover?: boolean;
     _id?: string;
-  }>;
+  }[];
   activa: boolean;
   slug: string;
   createdAt?: string;
@@ -26,8 +28,11 @@ interface Casa {
   __v?: number;
 }
 
-// ⚠️ Reemplaza esta URL con la tuya real (usa tu IP local en desarrollo)
-const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
+// Reemplaza esta URL con la tuya real (usa tu IP local en desarrollo)
+// const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
+
+// Direccion IPv4:port_backend
+const API_BASE_URL = 'http://192.168.0.181:5000';
 
 export default function CasasScreen() {
   const [casas, setCasas] = useState<Casa[]>([]);
@@ -115,7 +120,14 @@ export default function CasasScreen() {
               <Text style={styles.detailText}>Hasta {casa.horaFinEvento}</Text>
             </View>
             <Text style={styles.price}>Desde: S/ {casa.precioDesde.toLocaleString()}</Text>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                // Guardamos la casa seleccionada en memoria y abrimos el modal
+                setSelectedCasa(casa);
+                router.push('/modalCasa');
+              }}
+            >
               <Text style={styles.buttonText}>Ver detalle</Text>
             </TouchableOpacity>
           </View>
