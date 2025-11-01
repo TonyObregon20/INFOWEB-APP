@@ -2,6 +2,7 @@
 import { setSelectedService } from '@/utils/selectedService';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { API_BASE_URL } from '@/constants/api';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 // Define el tipo de un servicio
@@ -25,7 +26,10 @@ interface Service {
 
 // ⚠️ Reemplaza esta URL con la tuya real (usa tu IP local en desarrollo)
 // const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
-const API_BASE_URL = 'http://192.168.0.181:5000';
+// const API_BASE_URL = 'http://172.20.100.49:5000';
+
+// const API_BASE_URL = 'http://192.168.0.181:5000';
+
 
 export default function ServiciosScreen() {
   const [servicios, setServicios] = useState<Service[]>([]);
@@ -132,6 +136,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+    paddingTop: 30
   },
   loadingText: {
     textAlign: 'center',
