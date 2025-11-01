@@ -122,9 +122,8 @@ const styles = StyleSheet.create({
 // Simple Carousel component (local, no extra deps)
 function Carousel() {
   const images = [
-    'https://picsum.photos/800/400?random=1',
-    'https://picsum.photos/800/400?random=2',
-    'https://picsum.photos/800/400?random=3',
+    require('../../assets/images/boda1.jpeg'),
+    require('../../assets/images/corporativo1.jpg'),
   ];
   const [active, setActive] = useState(0);
   const ref = useRef<ScrollView | null>(null);
@@ -158,7 +157,7 @@ function Carousel() {
         onMomentumScrollEnd={onMomentum}
       >
         {images.map((src, i) => (
-          <Image key={i} source={{ uri: src }} style={[styles.galleryImage, { width }]} />
+          <Image key={i} source={src} style={[styles.galleryImage, { width }]} />
         ))}
       </ScrollView>
       <View style={styles.dots}>

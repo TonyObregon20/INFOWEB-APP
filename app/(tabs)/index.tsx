@@ -1,6 +1,6 @@
 // app/(tabs)/index.tsx
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
-import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function HomeScreen() {
   return (
@@ -25,7 +25,7 @@ export default function HomeScreen() {
         <Text style={styles.heroSubtitle}>
           Servicios para bodas, corporativos y celebraciones. Cotiza fácil y rápido.
         </Text>
-        <TouchableOpacity style={styles.whatsappButton} onPress={() => Linking.openURL('https://wa.me/51961212121')}>
+        <TouchableOpacity style={styles.whatsappButton}>
           <Text style={styles.buttonText}>💬 Cotizar por WhatsApp</Text>
         </TouchableOpacity>
        
@@ -96,7 +96,7 @@ export default function HomeScreen() {
       <View style={styles.ctaSection}>
         <Text style={styles.ctaTitle}>¿Listo para comenzar?</Text>
         <Text style={styles.ctaSubtitle}>Cotiza tu evento ahora</Text>
-        <TouchableOpacity style={styles.ctaButton} onPress={() => Linking.openURL('https://wa.me/51961212121')}>
+        <TouchableOpacity style={styles.ctaButton}>
           <Text style={styles.ctaButtonText}>💬 Contactar por WhatsApp</Text>
         </TouchableOpacity>
       </View>
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingTop: 30
+    paddingTop: 30,
   },
   header: {
     flexDirection: 'row',

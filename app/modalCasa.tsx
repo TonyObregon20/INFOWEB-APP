@@ -1,6 +1,6 @@
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MaterialIcons, FontAwesome5, Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -42,7 +42,8 @@ export default function ModalScreen() {
         </View>
 
         <View style={styles.infoContainer}>
-          <View style={styles.infoCardTop}>
+          {/* Title container (highlighted) */}
+          <View style={styles.titleContainer}>
             <ThemedText type="title">{casa.nombre}</ThemedText>
             <Text style={styles.address}>{casa.direccion}</Text>
           </View>
@@ -52,32 +53,37 @@ export default function ModalScreen() {
             <Text style={styles.description}>{casa.detalles}</Text>
           </View>
 
+          {/* Requested features: capacidad, area (m2), horario max y horario baja */}
           <View style={styles.featuresRow}>
             <View style={styles.featureBox}>
               <MaterialIcons name="people" size={20} color="#dd8b3a" />
               <Text style={styles.featureLabel}>Capacidad</Text>
-              <Text style={styles.featureValue}>{casa.capacidad ?? '—'} personas</Text>
+              <Text style={styles.featureValue}>{casa.capacidad ?? '—'} pers.</Text>
             </View>
+
             <View style={styles.featureBox}>
-              <FontAwesome5 name="bed" size={18} color="#dd8b3a" />
-              <Text style={styles.featureLabel}>Habitaciones</Text>
-              <Text style={styles.featureValue}>{casa.habitaciones ?? '—'}</Text>
+              <MaterialIcons name="straighten" size={20} color="#dd8b3a" />
+              <Text style={styles.featureLabel}>Área</Text>
+              <Text style={styles.featureValue}>{casa.areaM2 ?? '—'} m²</Text>
             </View>
-            <View style={styles.featureBox}>
-              <MaterialIcons name="bathtub" size={20} color="#dd8b3a" />
-              <Text style={styles.featureLabel}>Baños</Text>
-              <Text style={styles.featureValue}>{casa.banos ?? casa.banios ?? '—'}</Text>
+
+            <View style={{ width: '100%', alignItems: 'center' }}>
+              <View style={[styles.featureBox, { width: '48%' }]}>
+                <Ionicons name="time-outline" size={20} color="#dd8b3a" />
+                <Text style={styles.featureLabel}>Horario (máx)</Text>
+                <Text style={styles.featureValue}>{casa.horaFinEvento ?? '—'}</Text>
+              </View>
             </View>
-            <View style={styles.featureBox}>
-              <Ionicons name="car" size={20} color="#dd8b3a" />
-              <Text style={styles.featureLabel}>Parking</Text>
-              <Text style={styles.featureValue}>{casa.parking ?? '—'}</Text>
-            </View>
+
+            {/* <View style={styles.featureBox}>
+              <Ionicons name="time-outline" size={20} color="#dd8b3a" />
+              <Text style={styles.featureLabel}>Horario (baja)</Text>
+              <Text style={styles.featureValue}>{(casa.horaInicioEvento ?? casa.horaInicio ?? '—')}</Text>
+            </View> */}
           </View>
 
           <View style={styles.priceRowSimple}>
-            <Text style={styles.priceLarge}>S/ {Number(casa.precioDesde ?? 0).toLocaleString()}</Text>
-            <Text style={styles.priceNote}>por noche</Text>
+            <Text style={styles.priceLarge}>Desde: S/ {Number(casa.precioDesde ?? 0).toLocaleString()}</Text>
           </View>
         </View>
       </ScrollView>
@@ -102,8 +108,9 @@ const styles = StyleSheet.create({
   description: { color: '#333', marginBottom: 12 },
   price: { fontSize: 16, fontWeight: '700', color: '#FFA500' },
   /* new improved layout styles */
-  infoContainer: { backgroundColor: '#fff', borderRadius: 16, marginTop: -12, paddingTop: 18, paddingHorizontal: 14, paddingBottom: 18, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 2 },
+  infoContainer: { backgroundColor: '#fff', borderRadius: 16, marginTop: 20, paddingTop: 18, paddingHorizontal: 14, paddingBottom: 18, shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, elevation: 2 },
   infoCardTop: { marginBottom: 8 },
+  titleContainer: { backgroundColor: '#FFF4E6', padding: 12, borderRadius: 12, marginTop: -8, marginBottom: 10 },
   aboutSection: { marginTop: 6, marginBottom: 12 },
   sectionTitleSmall: { fontWeight: '700', marginBottom: 6, color: '#333' },
   featuresRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 8, marginBottom: 12 },
@@ -113,5 +120,4 @@ const styles = StyleSheet.create({
   featureValue: { fontWeight: '700', marginTop: 4, color: '#3a2b1f' },
   priceRowSimple: { marginTop: 12, alignItems: 'flex-start' },
   priceLarge: { fontSize: 20, fontWeight: '800', color: '#dd8b3a' },
-  priceNote: { color: '#666' },
 });
