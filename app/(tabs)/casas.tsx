@@ -32,7 +32,7 @@ interface Casa {
 // const API_BASE_URL = 'http://192.168.18.29:5001'; // ← CAMBIA ESTO
 
 // Direccion IPv4:port_backend
-const API_BASE_URL = 'http://192.168.0.181:5000';
+const API_BASE_URL = 'http://172.20.100.49:5000';
 
 export default function CasasScreen() {
   const [casas, setCasas] = useState<Casa[]>([]);

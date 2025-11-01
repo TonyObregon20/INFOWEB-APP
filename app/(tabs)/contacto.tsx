@@ -1,6 +1,9 @@
 // app/(tabs)/contacto.tsx
-import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { API_BASE_URL } from '@/constants/api';
+import { getSelectedService } from '@/utils/selectedService';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import React, { useEffect, useState } from 'react';
+import { Alert, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 
 export default function ContactoScreen() {
   const { width } = useWindowDimensions();
@@ -9,13 +12,89 @@ export default function ContactoScreen() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [service, setService] = useState('');
-  const [date, setDate] = useState('');
+  const [servicesList, setServicesList] = useState<any[]>([]);
+  const [sending, setSending] = useState(false);
+  const [showServicePicker, setShowServicePicker] = useState(false);
+  const [date, setDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [message, setMessage] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const handleSubmit = () => {
-    // placeholder: here you would post to your API
-    alert('Solicitud enviada (demo)');
+  useEffect(() => {
+    // fetch services to allow resolving service name -> id
+    const fetchServicios = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/services`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setServicesList(data || []);
+      } catch (err) {
+        // ignore, services are optional for this form
+      }
+    };
+    fetchServicios();
+  }, []);
+
+  const handleSubmit = async () => {
+    // Normalize event date to ISO yyyy-mm-dd
+    if (!name || !email || !date) {
+      Alert.alert('Faltan campos', 'Por favor completa nombre, correo y fecha del evento.');
+      return;
+    }
+
+    // Try to resolve serviceId: first check selectedService, then match by name
+    const selected = getSelectedService();
+    let serviceId: string | undefined;
+    if (selected && selected._id) serviceId = selected._id;
+    else if (service) {
+      const found = servicesList.find((s) => s.name && s.name.toLowerCase().trim() === service.toLowerCase().trim());
+      if (found) serviceId = found._id;
+    }
+
+    if (!serviceId) {
+      Alert.alert('Servicio requerido', 'Selecciona un servicio válido desde la pantalla de Servicios o escribe exactamente el nombre del servicio.');
+      return;
+    }
+
+    const eventDate = date instanceof Date ? date.toISOString().split('T')[0] : String(date);
+
+    const payload = {
+      name,
+      email,
+      phone: phone || '',
+      eventDate,
+      house: '',
+      message: message || '',
+      serviceId,
+    };
+
+    try {
+      setSending(true);
+      const res = await fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Error ${res.status}: ${txt}`);
+      }
+
+      Alert.alert('Enviado', 'Tu solicitud ha sido enviada correctamente.');
+      // clear form
+      setName('');
+      setEmail('');
+      setPhone('');
+      setService('');
+      setDate(null);
+      setMessage('');
+    } catch (err) {
+      console.error('Error enviando lead:', err);
+      Alert.alert('Error', err instanceof Error ? err.message : 'No se pudo enviar la solicitud');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -33,8 +112,72 @@ export default function ContactoScreen() {
           <TextInput style={styles.input} placeholder="Teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
           <View style={[styles.inlineRow, isSmall && styles.inlineColumn]}>
-            <TextInput style={[styles.input, isSmall ? styles.full : styles.half]} placeholder="Tipo de servicio" value={service} onChangeText={setService} />
-            <TextInput style={[styles.input, isSmall ? styles.full : styles.half]} placeholder="Fecha del evento" value={date} onChangeText={setDate} />
+            {servicesList && servicesList.length > 0 ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.input, isSmall ? styles.full : styles.half, styles.dateInput]}
+                  onPress={() => setShowServicePicker(true)}
+                >
+                  <Text style={{ color: service ? '#000' : '#888' }}>{service || 'Tipo de servicio'}</Text>
+                </TouchableOpacity>
+
+                <Modal visible={showServicePicker} animationType="slide" transparent={true}>
+                  <View style={styles.modalOverlay}>
+                    <View style={styles.modalContent}>
+                      <Text style={styles.modalTitle}>Selecciona un servicio</Text>
+                      <ScrollView>
+                        {servicesList.map((s) => (
+                          <TouchableOpacity
+                            key={s._id}
+                            style={styles.modalItem}
+                            onPress={() => {
+                              setService(s.name);
+                              // set global selected like other screens might expect
+                              try {
+                                // lazy import/set to avoid circulars — use dynamic require
+                                const { setSelectedService } = require('@/utils/selectedService');
+                                setSelectedService(s);
+                              } catch (e) {
+                                // ignore
+                              }
+                              setShowServicePicker(false);
+                            }}
+                          >
+                            <Text>{s.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                      <TouchableOpacity style={styles.modalClose} onPress={() => setShowServicePicker(false)}>
+                        <Text style={{ color: '#fff' }}>Cerrar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+              </>
+            ) : (
+              <TextInput style={[styles.input, isSmall ? styles.full : styles.half]} placeholder="Tipo de servicio" value={service} onChangeText={setService} />
+            )}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={[styles.input, isSmall ? styles.full : styles.half, styles.dateInput]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={{ color: date ? '#000' : '#888' }}>{date ? date.toLocaleDateString() : 'Fecha del evento'}</Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={date ?? new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                onChange={(event: any, selectedDate?: Date) => {
+                  // On Android the picker closes after selection; on iOS it may remain open
+                  if (Platform.OS === 'android') {
+                    setShowDatePicker(false);
+                  }
+                  if (selectedDate) setDate(selectedDate);
+                }}
+              />
+            )}
           </View>
 
           <TextInput style={[styles.input, styles.textarea]} placeholder="Mensaje *" value={message} onChangeText={setMessage} multiline numberOfLines={5} />
@@ -52,7 +195,7 @@ export default function ContactoScreen() {
             <Text style={styles.infoText}>delcastilloeventos.jf@gmail.com</Text>
             <Text style={styles.bold}>WhatsApp:</Text>
             <Text style={styles.infoText}>+51 961 212 121</Text>
-            <TouchableOpacity style={styles.whatsappBtn}>
+            <TouchableOpacity style={styles.whatsappBtn} onPress={() => Linking.openURL('https://wa.me/51961212121')}>
               <Text style={styles.whatsappText}>Escribir por WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -110,6 +253,12 @@ const styles = StyleSheet.create({
   sideColumn: { flex: 1, marginLeft: 12 },
   cardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
   input: { borderWidth: 1, borderColor: '#e6e6e6', borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: '#fff' },
+  dateInput: { justifyContent: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: 10, padding: 12 },
+  modalTitle: { fontWeight: '700', marginBottom: 8 },
+  modalItem: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  modalClose: { marginTop: 12, backgroundColor: '#F4A042', padding: 10, borderRadius: 8, alignItems: 'center' },
   inlineRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
   inlineColumn: { flexDirection: 'column' },
   half: { flex: 1 },

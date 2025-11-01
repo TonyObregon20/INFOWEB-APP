@@ -1,7 +1,7 @@
 // app/(tabs)/nosotros.tsx
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function NosotrosScreen() {
   return (
@@ -16,7 +16,7 @@ export default function NosotrosScreen() {
               <TouchableOpacity style={styles.ctaPrimary} onPress={() => router.push('/contacto')}>
                 <Text style={styles.ctaPrimaryTextDark}>Quiero cotizar</Text>
               </TouchableOpacity>
-            <TouchableOpacity style={styles.ctaOutline}>
+            <TouchableOpacity style={styles.ctaOutline} onPress={() => Linking.openURL('https://wa.me/51961212121')}>
               <Text style={styles.ctaOutlineText}>Escríbenos por WhatsApp</Text>
             </TouchableOpacity>
           </View>
@@ -70,7 +70,7 @@ export default function NosotrosScreen() {
       <View style={styles.cardFooter}>
         <Text style={styles.cardFooterTitle}>¿Listo para tu evento?</Text>
         <Text style={styles.cardFooterText}>Cuéntanos tu idea y armamos una propuesta a medida.</Text>
-        <TouchableOpacity style={styles.ctaPrimaryWide}>
+        <TouchableOpacity style={styles.ctaPrimaryWide} onPress={() => Linking.openURL('https://wa.me/51961212121')}>
           <Text style={styles.ctaPrimaryText}>Contactar por WhatsApp</Text>
         </TouchableOpacity>
       </View>
