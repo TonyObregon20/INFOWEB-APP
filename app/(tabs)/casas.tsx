@@ -129,7 +129,7 @@ export default function CasasScreen() {
               onPress={() => {
                 // Guardamos la casa seleccionada en memoria y abrimos el modal
                 setSelectedCasa(casa);
-                router.push('/modalCasa');
+                router.push('/modalcasa');
               }}
             >
               <Text style={styles.buttonText}>Ver detalle</Text>

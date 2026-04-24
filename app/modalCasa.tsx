@@ -6,6 +6,11 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { getSelectedCasa } from '@/utils/selectedCasa';
 
+export const options = {
+  title: 'Detalle de la casa',
+  headerBackTitle: 'Casas', 
+};
+
 export default function ModalScreen() {
   const [casa, setCasa] = useState<any | null>(null);
   const [index, setIndex] = useState(0);
