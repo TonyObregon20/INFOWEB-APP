@@ -4,5 +4,5 @@
 // export const API_BASE_URL = 'http://172.20.100.49:5000';
 
 
-export const API_BASE_URL = 'http://172.20.10.2:5001';
+export const API_BASE_URL = 'https://fluffy-fortnight-wrr7459j4p5rf9969-5001.app.github.dev';
 
