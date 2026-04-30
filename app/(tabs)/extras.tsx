@@ -1,27 +1,121 @@
 import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Image } from 'react-native';
 import { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 import { API_BASE_URL } from '../../constants/api';
+import { setSelectedExtra } from '@/utils/selectedExtra';
+
+interface ExtraImage {
+  url?: string;
+  imageId?: string;
+  isCover?: boolean;
+}
 
 interface Extra {
   _id: string;
   name: string;
   description: string;
   price: number;
-  images?: Array<{
-    url: string;
-    isCover: boolean;
-  }>;
-  coverImage?: {
-    url: string;
-    isCover: boolean;
+  images?: ExtraImage[];
+  coverImage?: ExtraImage;
+}
+
+const toAbsoluteUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  if (url.startsWith('/')) return `${API_BASE_URL}${url}`;
+  return `${API_BASE_URL}/${url}`;
+};
+
+const resolveImageUrl = (image?: ExtraImage | null): string | null => {
+  if (!image) return null;
+  if (image.imageId) return `${API_BASE_URL}/api/images/${image.imageId}`;
+  return toAbsoluteUrl(image.url);
+};
+
+const buildImageUrls = (extra: Extra): string[] => {
+  const urls: string[] = [];
+  const add = (url?: string | null) => {
+    const normalized = toAbsoluteUrl(url);
+    if (normalized && !urls.includes(normalized)) {
+      urls.push(normalized);
+    }
   };
+
+  add(resolveImageUrl(extra.coverImage) ?? extra.coverImage?.url ?? null);
+  extra.images?.forEach((img) => {
+    add(resolveImageUrl(img) ?? img.url ?? null);
+  });
+
+  return urls;
+};
+
+function ExtraCarousel({ imageUrls, imageHeight }: { imageUrls: string[]; imageHeight: number }) {
+  const [active, setActive] = useState(0);
+  const [width, setWidth] = useState(0);
+  const displayImages = imageUrls.length === 1 ? [imageUrls[0], imageUrls[0]] : imageUrls;
+
+  if (displayImages.length === 0) {
+    return (
+      <View style={[styles.extraPlaceholder, { height: imageHeight }]}>
+        <Text style={styles.placeholderIcon}>✨</Text>
+      </View>
+    );
+  }
+
+  const handleLayout = (event: any) => {
+    const nextWidth = Math.round(event.nativeEvent.layout.width);
+    if (nextWidth && nextWidth !== width) {
+      setWidth(nextWidth);
+    }
+  };
+
+  const syncActiveIndex = (event: any) => {
+    if (!width) return;
+    const x = event.nativeEvent.contentOffset.x;
+    const idx = Math.round(x / width);
+    const clamped = Math.max(0, Math.min(idx, displayImages.length - 1));
+    if (clamped !== active) setActive(clamped);
+  };
+
+  return (
+    <View onLayout={handleLayout}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={syncActiveIndex}
+        onScroll={syncActiveIndex}
+        scrollEventThrottle={16}
+        style={[styles.carousel, width ? { width } : null]}
+      >
+        {displayImages.map((uri, i) => (
+          <Image
+            key={`${uri}-${i}`}
+            source={{ uri }}
+            style={[styles.extraImage, { height: imageHeight }, width ? { width } : null]}
+            resizeMode="cover"
+            onError={(error) => console.warn(`Error cargando imagen: ${uri}`, error)}
+          />
+        ))}
+      </ScrollView>
+      {displayImages.length > 1 ? (
+        <View style={styles.carouselDots}>
+          {displayImages.map((_, i) => (
+            <View key={`dot-${i}`} style={[styles.carouselDot, i === active && styles.carouselDotActive]} />
+          ))}
+        </View>
+      ) : null}
+    </View>
+  );
 }
 
 export default function ExtrasScreen() {
   const [extras, setExtras] = useState<Extra[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { width } = useWindowDimensions();
+  const isSingleColumn = width < 700;
+  const imageHeight = isSingleColumn ? 160 : 120;
 
   useEffect(() => {
     fetchExtras();
@@ -58,32 +152,6 @@ export default function ExtrasScreen() {
     }
   };
 
-  const getCoverImageUrl = (extra: Extra): string | null => {
-    // Primero intenta usar coverImage virtual
-    let url = extra.coverImage?.url;
-    
-    // Luego intenta la primera imagen marcada como cover
-    if (!url) {
-      const coverImg = extra.images?.find(img => img.isCover);
-      url = coverImg?.url;
-    }
-    
-    // Finalmente la primera imagen disponible
-    if (!url && extra.images?.[0]?.url) {
-      url = extra.images[0].url;
-    }
-    
-    if (!url) return null;
-    
-    // Si ya es una URL completa, retornarla tal cual
-    if (url.startsWith('http')) {
-      return url;
-    }
-    
-    // Si es una ruta relativa (/api/images/:id), construir URL completa
-    return `${API_BASE_URL}${url}`;
-  };
-
   if (loading) {
     return (
       <View style={styles.centerContainer}>
@@ -114,40 +182,36 @@ export default function ExtrasScreen() {
 
       {/* Grid de extras */}
       {extras.length > 0 ? (
-        <View style={styles.extrasGrid}>
+        <View style={[styles.extrasGrid, isSingleColumn && styles.extrasGridSingle]}>
           {extras.map((extra) => {
-            const coverImageUrl = getCoverImageUrl(extra);
+            const imageUrls = buildImageUrls(extra);
+            const descriptionText = extra.description?.trim() ? extra.description : ' ';
             return (
-              <TouchableOpacity key={extra._id} style={styles.extraItem}>
-                {/* Imagen de portada si existe */}
-                {coverImageUrl ? (
-                  <Image
-                    source={{ uri: coverImageUrl }}
-                    style={styles.extraImage}
-                    resizeMode="cover"
-                    onError={(error) => console.warn(`Error cargando imagen: ${coverImageUrl}`, error)}
-                  />
-                ) : (
-                  <View style={styles.extraPlaceholder}>
-                    <Text style={styles.placeholderIcon}>✨</Text>
-                  </View>
-                )}
+              <View key={extra._id} style={[styles.extraItem, isSingleColumn && styles.extraItemSingle]}>
+                <ExtraCarousel imageUrls={imageUrls} imageHeight={imageHeight} />
 
                 {/* Contenido */}
-                <View style={styles.extraContent}>
-                  <Text style={styles.extraName} numberOfLines={2}>{extra.name}</Text>
-                  
-                  {extra.description && (
+                <View style={styles.extraBody}>
+                  <View style={styles.extraContent}>
+                    <Text style={styles.extraName} numberOfLines={2}>{extra.name}</Text>
                     <Text style={styles.extraDescription} numberOfLines={2}>
-                      {extra.description}
+                      {descriptionText}
                     </Text>
-                  )}
-                  
-                  <Text style={styles.extraPrice}>
-                    ${extra.price?.toLocaleString('es-CO') || '0'}
-                  </Text>
+                    <Text style={styles.extraPrice}>
+                      ${extra.price?.toLocaleString('es-CO') || '0'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.detailButton}
+                    onPress={() => {
+                      setSelectedExtra(extra);
+                      router.push('/modalExtra');
+                    }}
+                  >
+                    <Text style={styles.detailButtonText}>VER DETALLE</Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -213,6 +277,9 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
     justifyContent: 'space-between',
   },
+  extrasGridSingle: {
+    paddingHorizontal: 16,
+  },
   extraItem: {
     width: '48%',
     backgroundColor: '#fff',
@@ -225,9 +292,32 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  extraItemSingle: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  carousel: {
+    width: '100%',
+  },
   extraImage: {
     width: '100%',
     height: 120,
+  },
+  carouselDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  carouselDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#ddd',
+    marginHorizontal: 3,
+  },
+  carouselDotActive: {
+    backgroundColor: '#e67e22',
   },
   extraPlaceholder: {
     width: '100%',
@@ -239,25 +329,45 @@ const styles = StyleSheet.create({
   placeholderIcon: {
     fontSize: 32,
   },
+  extraBody: {
+    justifyContent: 'space-between',
+    flexGrow: 1,
+  },
   extraContent: {
     paddingVertical: 12,
     paddingHorizontal: 12,
+    flexGrow: 1,
   },
   extraName: {
     fontSize: 13,
     fontWeight: '700',
     color: '#1a1a1a',
     marginBottom: 4,
+    lineHeight: 16,
+    minHeight: 32,
   },
   extraDescription: {
     fontSize: 11,
     color: '#999',
     marginBottom: 6,
+    lineHeight: 14,
+    minHeight: 28,
   },
   extraPrice: {
     fontSize: 12,
     fontWeight: '700',
     color: '#e67e22',
+  },
+  detailButton: {
+    backgroundColor: '#e67e22',
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  detailButtonText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.8,
   },
   emptyContainer: {
     paddingVertical: 40,
