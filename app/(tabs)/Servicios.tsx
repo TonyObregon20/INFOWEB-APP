@@ -1,9 +1,10 @@
 // app/(tabs)/servicios.tsx
+import AppHeader from '@/components/app-header';
+import { API_BASE_URL } from '@/constants/api';
 import { setSelectedService } from '@/utils/selectedService';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { API_BASE_URL } from '@/constants/api';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from 'react-native';
 
 // Define el tipo de un servicio
 interface Service {
@@ -32,6 +33,8 @@ interface Service {
 
 
 export default function ServiciosScreen() {
+  const { width } = useWindowDimensions();
+  const isSmall = width < 700;
   const [servicios, setServicios] = useState<Service[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +54,6 @@ export default function ServiciosScreen() {
       const data = await response.json();
       setServicios(data);
     } catch (err) {
-      // Manejo seguro del error
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -62,10 +64,16 @@ export default function ServiciosScreen() {
     }
   };
 
+  const getCoverImageUrl = (servicio: Service): string | null => {
+    let imageId = servicio.images?.[0]?.imageId;
+    if (!imageId) return null;
+    return `${API_BASE_URL}/api/images/${imageId}`;
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.loadingText}>Cargando servicios...</Text>
+        <ActivityIndicator size="large" color="#D4AF37" style={{ marginTop: 100 }} />
       </View>
     );
   }
@@ -82,165 +90,238 @@ export default function ServiciosScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
+      <AppHeader />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.contentContainer}>
       {/* Encabezado */}
       <View style={styles.header}>
-        <Text style={styles.title}>Catálogo de Servicios</Text>
-        <Text style={styles.subtitle}>Precios referenciales según requerimientos.</Text>
+        <Text style={styles.title}>Nuestros Servicios</Text>
       </View>
 
-      {/* Lista de servicios */}
-      {servicios.map((servicio) => (
-        <TouchableOpacity key={servicio._id} style={styles.card}>
-          {/* Imagen principal (usamos la primera imagen con isCover=true, o la primera si no hay) */}
-          <Image
-            source={{
-              uri: `${API_BASE_URL}/api/images/${servicio.images[0]?.imageId || 'default'}`,
-            }}
-            style={styles.image}
-            resizeMode="cover"
-          />
+      {/* Grid de servicios */}
+      <View style={isSmall ? styles.gridSingle : styles.gridDouble}>
+        {servicios.map((servicio) => {
+          const coverImageUrl = getCoverImageUrl(servicio);
+          const categoria = servicio.category || 'Servicio';
 
-          {/* Información del servicio */}
-          <View style={styles.info}>
-            <Text style={styles.name}>{servicio.name}</Text>
-            <Text style={styles.category}>{servicio.category}</Text>
-            <Text style={styles.description}>{servicio.description}</Text>
-            <View style={styles.details}>
-              <Text style={styles.detailIcon}>👥</Text>
-              <Text style={styles.detailText}>
-                {servicio.capacityMin} - {servicio.capacityMax} pers.
-              </Text>
-            </View>
-            <Text style={styles.price}>
-              {servicio.basePrice > 0 ? `Desde: S/ ${servicio.basePrice.toLocaleString()}` : 'Precio a consultar'}
-            </Text>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                setSelectedService(servicio);
-                // Open the modal for service details
-                router.push('/modalServicio' as any);
-              }}
+          return (
+            <View 
+              key={servicio._id} 
+              style={styles.card}
             >
-              <Text style={styles.buttonText}>Ver detalle</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+              {/* Imagen con Badge de categoría */}
+              <View style={styles.imageContainer}>
+                {coverImageUrl ? (
+                  <Image
+                    source={{ uri: coverImageUrl }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View style={[styles.image, { backgroundColor: '#e6e6e6', justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ color: '#999' }}>Sin imagen</Text>
+                  </View>
+                )}
+
+                {/* Badge de categoría flotante */}
+                <View style={styles.categoryBadge}>
+                  <Text style={styles.categoryIcon}>✦</Text>
+                  <Text style={styles.categoryText}>{categoria}</Text>
+                </View>
+              </View>
+
+              {/* Información */}
+              <View style={styles.info}>
+                <Text style={styles.serviceName}>{servicio.name}</Text>
+
+                {/* Rango de capacidad */}
+                <View style={styles.capacityRow}>
+                  <Text style={styles.capacityIcon}>👥</Text>
+                  <Text style={styles.capacityText}>
+                    {servicio.capacityMin || 0} - {servicio.capacityMax || 0} PERSONAS
+                  </Text>
+                </View>
+
+                {/* Botón principal */}
+                <TouchableOpacity 
+                  style={styles.exploreButton}
+                  onPress={() => {
+                    setSelectedService(servicio);
+                    router.push('/modalServicio');
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.exploreButtonText}>EXPLORAR SERVICIO</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: 30
+    backgroundColor: '#FDFBF7',
   },
-  loadingText: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-    color: '#666',
+  scroll: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 40,
+  },
+  header: {
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '300',
+    color: '#1a1a1a',
+    fontFamily: 'CormorantGaramond-Light',
+    letterSpacing: 0.5,
+  },
+  gridSingle: {
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+  gridDouble: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 12,
+    paddingTop: 24,
+    justifyContent: 'space-between',
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 40,
+    overflow: 'hidden',
+    marginBottom: 24,
+    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  imageContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: 40,
+  },
+  image: {
+    width: '100%',
+    height: 280,
+    backgroundColor: '#f0f0f0',
+  },
+  categoryBadge: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryIcon: {
+    fontSize: 10,
+    color: '#D4AF37',
+  },
+  categoryText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontFamily: 'Montserrat-Bold',
+  },
+  info: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+  },
+  serviceName: {
+    fontSize: 22,
+    fontWeight: '400',
+    color: '#1a1a1a',
+    marginBottom: 16,
+    fontFamily: 'CormorantGaramond-Light',
+    letterSpacing: 0.3,
+  },
+  capacityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  capacityIcon: {
+    fontSize: 14,
+  },
+  capacityText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#bbb',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontFamily: 'Montserrat-Bold',
+  },
+  exploreButton: {
+    backgroundColor: '#E67E22',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    alignItems: 'center',
+    shadowColor: '#E67E22',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  exploreButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontFamily: 'Montserrat-Bold',
   },
   errorText: {
     textAlign: 'center',
     marginTop: 50,
     fontSize: 16,
-    color: 'red',
+    color: '#D4AF37',
+    fontWeight: '600',
   },
   retryButton: {
-    backgroundColor: '#1a1a2e',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: '#D4AF37',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 24,
     marginTop: 20,
     marginHorizontal: 50,
     alignItems: 'center',
   },
   retryText: {
     color: '#fff',
-    fontWeight: 'bold',
-  },
-  header: {
-    padding: 20,
-    backgroundColor: '#f9f9f9',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 5,
-  },
-  card: {
-    margin: 10,
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  image: {
-    width: '100%',
-    height: 200,
-  },
-  info: {
-    padding: 15,
-  },
-  name: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 5,
-    color: '#333',
-  },
-  category: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
-  },
-  description: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
-  },
-  details: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  detailIcon: {
-    fontSize: 14,
-    marginRight: 5,
-    color: '#666',
-  },
-  detailText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFA500', // Naranja como en tu prototipo
-    marginBottom: 10,
-  },
-  button: {
-    backgroundColor: '#FFA500',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignSelf: 'flex-start',
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    fontSize: 12,
+    letterSpacing: 0.5,
   },
 });

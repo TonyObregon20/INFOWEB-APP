@@ -1,10 +1,11 @@
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View, ImageBackground } from 'react-native';
-import { router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, DancingScript_400Regular } from '@expo-google-fonts/dancing-script';
+import AppHeader from '@/components/app-header';
 import { CormorantGaramond_300Light, CormorantGaramond_300Light_Italic } from '@expo-google-fonts/cormorant-garamond';
+import { DancingScript_400Regular, useFonts } from '@expo-google-fonts/dancing-script';
 import { Montserrat_700Bold } from '@expo-google-fonts/montserrat';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { ImageBackground, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -23,17 +24,9 @@ export default function HomeScreen() {
   SplashScreen.hideAsync();
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Header con logo y botón COTIZAR */}
-      <View style={styles.headerTop}>
-        <View style={styles.logoSection}>
-          <Text style={styles.logoMain}>Del Castillo</Text>
-          <Text style={styles.logoSub}>EVENTOS</Text>
-        </View>
-        <TouchableOpacity style={styles.cotizarButton}>
-          <Text style={styles.cotizarButtonText}>COTIZAR AHORA</Text>
-        </TouchableOpacity>
-      </View>
+    <View style={styles.container}>
+      <AppHeader />
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
 
       {/* HERO SECTION CON IMAGEN ELEGANTE */}
       <View style={styles.heroContainer}>
@@ -139,14 +132,21 @@ export default function HomeScreen() {
       </View>
       
       <View style={{ height: 100 }} />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#FDFBF7',
+  },
+  scroll: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 40,
   },
   
   // HEADER TOP CON LOGO Y BOTÓN COTIZAR

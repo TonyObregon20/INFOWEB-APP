@@ -1,58 +1,89 @@
 // app/(tabs)/contacto.tsx
+import AppHeader from '@/components/app-header';
 import { API_BASE_URL } from '@/constants/api';
-import { getSelectedService } from '@/utils/selectedService';
+import { Montserrat_400Regular, Montserrat_700Bold, useFonts } from '@expo-google-fonts/montserrat';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+
+SplashScreen.preventAutoHideAsync();
 
 export default function ContactoScreen() {
+  const [fontsLoaded, fontError] = useFonts({
+    Montserrat_400Regular,
+    Montserrat_700Bold,
+  });
+
+  // State hooks deben ir antes del return condicional
   const { width } = useWindowDimensions();
   const isSmall = width < 700;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [service, setService] = useState('');
+  const [serviceId, setServiceId] = useState('');
   const [servicesList, setServicesList] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
   const [sending, setSending] = useState(false);
   const [showServicePicker, setShowServicePicker] = useState(false);
-  const [date, setDate] = useState<Date | null>(null);
+  const [date, setDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [message, setMessage] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  // Esconder splash screen cuando fonts estén cargadas
   useEffect(() => {
-    // fetch services to allow resolving service name -> id
-    const fetchServicios = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/services`);
-        if (!res.ok) return;
-        const data = await res.json();
-        setServicesList(data || []);
-      } catch (err) {
-        // ignore, services are optional for this form
-      }
-    };
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  useEffect(() => {
     fetchServicios();
   }, []);
 
+  const fetchServicios = async () => {
+    try {
+      setLoadingServices(true);
+      console.log('🔄 Fetching services from:', `${API_BASE_URL}/api/services`);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 segundos timeout
+      
+      const res = await fetch(`${API_BASE_URL}/api/services`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}: No se pudieron cargar los servicios`);
+      const data = await res.json();
+      console.log('✅ Servicios cargados:', data);
+      setServicesList(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('❌ Error fetching services:', err?.message || err);
+      let errorMsg = 'No se pudieron cargar los servicios';
+      
+      if (err?.name === 'AbortError') {
+        errorMsg = 'Tiempo agotado. Revisa que el servidor esté corriendo en ' + API_BASE_URL;
+      } else if (err?.message?.includes('Network')) {
+        errorMsg = 'Error de conexión. ¿El servidor está en ' + API_BASE_URL + '?';
+      }
+      
+      Alert.alert('Error', errorMsg);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
   const handleSubmit = async () => {
-    // Normalize event date to ISO yyyy-mm-dd
     if (!name || !email || !date) {
       Alert.alert('Faltan campos', 'Por favor completa nombre, correo y fecha del evento.');
       return;
     }
 
-    // Try to resolve serviceId: first check selectedService, then match by name
-    const selected = getSelectedService();
-    let serviceId: string | undefined;
-    if (selected && selected._id) serviceId = selected._id;
-    else if (service) {
-      const found = servicesList.find((s) => s.name && s.name.toLowerCase().trim() === service.toLowerCase().trim());
-      if (found) serviceId = found._id;
-    }
-
     if (!serviceId) {
-      Alert.alert('Servicio requerido', 'Selecciona un servicio válido desde la pantalla de Servicios o escribe exactamente el nombre del servicio.');
+      Alert.alert('Servicio requerido', 'Selecciona un servicio válido.');
       return;
     }
 
@@ -70,6 +101,7 @@ export default function ContactoScreen() {
 
     try {
       setSending(true);
+      console.log('📤 Enviando payload:', payload);
       const res = await fetch(`${API_BASE_URL}/api/leads`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,28 +113,36 @@ export default function ContactoScreen() {
         throw new Error(`Error ${res.status}: ${txt}`);
       }
 
-      Alert.alert('Enviado', 'Tu solicitud ha sido enviada correctamente.');
-      // clear form
+      Alert.alert('✅ Enviado', 'Tu solicitud ha sido enviada correctamente.');
+      // Limpiar formulario
       setName('');
       setEmail('');
       setPhone('');
       setService('');
-      setDate(null);
+      setServiceId('');
+      setDate(new Date());
       setMessage('');
     } catch (err) {
-      console.error('Error enviando lead:', err);
+      console.error('❌ Error enviando lead:', err);
       Alert.alert('Error', err instanceof Error ? err.message : 'No se pudo enviar la solicitud');
     } finally {
       setSending(false);
     }
   };
 
+  // Mostrar loading mientras se cargan los fonts
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Contacto</Text>
-        <Text style={styles.headerSub}>Cuéntanos qué necesitas y te ayudamos con la organización de tu evento.</Text>
-      </View>
+    <View style={styles.container}>
+      <AppHeader />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Contacto</Text>
+          <Text style={styles.headerSub}>Cuéntanos qué necesitas y te ayudamos con la organización de tu evento.</Text>
+        </View>
 
       <View style={isSmall ? styles.column : styles.row}>
         <View style={[styles.formCard, isSmall && styles.fullWidthCard]}>
@@ -112,78 +152,93 @@ export default function ContactoScreen() {
           <TextInput style={styles.input} placeholder="Teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
           <View style={[styles.inlineRow, isSmall && styles.inlineColumn]}>
-            {servicesList && servicesList.length > 0 ? (
-              <>
-                <TouchableOpacity
-                  style={[styles.input, isSmall ? styles.full : styles.half, styles.dateInput]}
-                  onPress={() => setShowServicePicker(true)}
-                >
-                  <Text style={{ color: service ? '#000' : '#888' }}>{service || 'Tipo de servicio'}</Text>
-                </TouchableOpacity>
+            {/* ✅ SERVICIO SELECTOR MEJORADO */}
+            <TouchableOpacity
+              style={[styles.input, isSmall ? styles.full : styles.half, styles.selectButton]}
+              onPress={() => setShowServicePicker(true)}
+            >
+              <Text style={{ color: service ? '#000' : '#888', fontWeight: service ? '600' : '400' }}>
+                {service || 'Tipo de servicio *'}
+              </Text>
+            </TouchableOpacity>
 
-                <Modal visible={showServicePicker} animationType="slide" transparent={true}>
-                  <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                      <Text style={styles.modalTitle}>Selecciona un servicio</Text>
-                      <ScrollView>
-                        {servicesList.map((s) => (
+            {/* MODAL DE SERVICIOS */}
+            <Modal visible={showServicePicker} animationType="slide" transparent={true}>
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Selecciona un servicio</Text>
+                    <TouchableOpacity onPress={() => setShowServicePicker(false)}>
+                      <Text style={styles.modalClose}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {loadingServices ? (
+                    <View style={{ justifyContent: 'center', alignItems: 'center', paddingVertical: 30 }}>
+                      <ActivityIndicator size="large" color="#F4A042" />
+                    </View>
+                  ) : (
+                    <ScrollView>
+                      {servicesList && servicesList.length > 0 ? (
+                        servicesList.map((s) => (
                           <TouchableOpacity
                             key={s._id}
                             style={styles.modalItem}
                             onPress={() => {
                               setService(s.name);
-                              // set global selected like other screens might expect
-                              try {
-                                // lazy import/set to avoid circulars — use dynamic require
-                                const { setSelectedService } = require('@/utils/selectedService');
-                                setSelectedService(s);
-                              } catch (e) {
-                                // ignore
-                              }
+                              setServiceId(s._id);
                               setShowServicePicker(false);
                             }}
                           >
-                            <Text>{s.name}</Text>
+                            <Text style={styles.modalItemText}>{s.name}</Text>
+                            {s.description && <Text style={styles.modalItemSub}>{s.description}</Text>}
                           </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                      <TouchableOpacity style={styles.modalClose} onPress={() => setShowServicePicker(false)}>
-                        <Text style={{ color: '#fff' }}>Cerrar</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Modal>
-              </>
-            ) : (
-              <TextInput style={[styles.input, isSmall ? styles.full : styles.half]} placeholder="Tipo de servicio" value={service} onChangeText={setService} />
-            )}
+                        ))
+                      ) : (
+                        <Text style={styles.modalEmpty}>No hay servicios disponibles</Text>
+                      )}
+                    </ScrollView>
+                  )}
+                </View>
+              </View>
+            </Modal>
+
+            {/* ✅ FECHA MEJORADA CON MINICALENDARIO */}
             <TouchableOpacity
               activeOpacity={0.8}
-              style={[styles.input, isSmall ? styles.full : styles.half, styles.dateInput]}
+              style={[styles.input, isSmall ? styles.full : styles.half, styles.selectButton]}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={{ color: date ? '#000' : '#888' }}>{date ? date.toLocaleDateString() : 'Fecha del evento'}</Text>
+              <Text style={{ color: date ? '#000' : '#888', fontWeight: date ? '600' : '400' }}>
+                {date ? date.toLocaleDateString('es-CO', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }) : 'Fecha del evento *'}
+              </Text>
             </TouchableOpacity>
+
             {showDatePicker && (
               <DateTimePicker
-                value={date ?? new Date()}
+                value={date}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
                 onChange={(event: any, selectedDate?: Date) => {
-                  // On Android the picker closes after selection; on iOS it may remain open
                   if (Platform.OS === 'android') {
                     setShowDatePicker(false);
                   }
-                  if (selectedDate) setDate(selectedDate);
+                  if (selectedDate) {
+                    setDate(selectedDate);
+                  }
                 }}
               />
             )}
           </View>
 
-          <TextInput style={[styles.input, styles.textarea]} placeholder="Mensaje *" value={message} onChangeText={setMessage} multiline numberOfLines={5} />
+          <TextInput style={[styles.input, styles.textarea]} placeholder="Mensaje (opcional)" value={message} onChangeText={setMessage} multiline numberOfLines={5} />
 
-          <TouchableOpacity style={styles.submit} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Enviar solicitud</Text>
+          <TouchableOpacity 
+            style={[styles.submit, sending && styles.submitDisabled]} 
+            onPress={handleSubmit}
+            disabled={sending}
+          >
+            <Text style={styles.submitText}>{sending ? 'Enviando...' : 'Enviar solicitud'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -237,46 +292,73 @@ export default function ContactoScreen() {
           </View>
         </View>
       </View>
-    </ScrollView>
+
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 30 },
-  content: { paddingBottom: 40 },
-  header: { backgroundColor: '#F4B36A', paddingVertical: 24, paddingHorizontal: 16 },
-  headerTitle: { fontSize: 28, fontWeight: '800', color: '#3a2b1f', marginBottom: 6 },
-  headerSub: { color: '#4b3a2d' },
-  row: { flexDirection: 'row', padding: 16, gap: 16 },
-  column: { flexDirection: 'column', padding: 12 },
-  formCard: { flex: 2, backgroundColor: '#fff', padding: 16, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  sideColumn: { flex: 1, marginLeft: 12 },
-  cardTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-  input: { borderWidth: 1, borderColor: '#e6e6e6', borderRadius: 8, padding: 10, marginBottom: 10, backgroundColor: '#fff' },
-  dateInput: { justifyContent: 'center' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '90%', maxHeight: '70%', backgroundColor: '#fff', borderRadius: 10, padding: 12 },
-  modalTitle: { fontWeight: '700', marginBottom: 8 },
-  modalItem: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  modalClose: { marginTop: 12, backgroundColor: '#F4A042', padding: 10, borderRadius: 8, alignItems: 'center' },
-  inlineRow: { flexDirection: 'row', gap: 10, justifyContent: 'space-between' },
+  container: { flex: 1, backgroundColor: '#FDFBF7' },
+  scroll: { flex: 1 },
+  content: { paddingBottom: 20 },
+  
+  // Header Section
+  header: { backgroundColor: 'transparent', paddingVertical: 0, paddingHorizontal: 0 },
+  headerTitle: { fontSize: 32, fontWeight: '700', color: '#1A1A1A', marginBottom: 8, paddingHorizontal: 16, paddingTop: 20, fontFamily: 'Montserrat_700Bold' },
+  headerSub: { color: '#6B6B6B', paddingHorizontal: 16, marginBottom: 20, fontSize: 15, fontFamily: 'Montserrat_400Regular', lineHeight: 22 },
+  
+  // Layout
+  row: { flexDirection: 'row', paddingHorizontal: 16, gap: 20 },
+  column: { flexDirection: 'column', paddingHorizontal: 16 },
+  
+  // Form Card
+  formCard: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  sideColumn: { flex: 1 },
+  cardTitle: { fontSize: 20, fontWeight: '700', marginBottom: 16, color: '#1A1A1A', fontFamily: 'Montserrat_700Bold' },
+  
+  // Inputs
+  input: { borderWidth: 1, borderColor: '#E8E8E8', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, marginBottom: 12, backgroundColor: '#FFFFFF', color: '#1A1A1A', fontSize: 14, fontFamily: 'Montserrat_400Regular' },
+  selectButton: { justifyContent: 'center', paddingVertical: 16 },
+  
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { maxHeight: '75%', backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20 },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', paddingBottom: 12 },
+  modalTitle: { fontWeight: '700', fontSize: 18, color: '#1A1A1A', fontFamily: 'Montserrat_700Bold' },
+  modalClose: { fontSize: 24, color: '#999' },
+  modalItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  modalItemText: { fontSize: 15, fontWeight: '500', color: '#1A1A1A', fontFamily: 'Montserrat_700Bold' },
+  modalItemSub: { fontSize: 13, color: '#999', marginTop: 4, fontFamily: 'Montserrat_400Regular' },
+  modalEmpty: { textAlign: 'center', paddingVertical: 20, color: '#999', fontFamily: 'Montserrat_400Regular' },
+
+  inlineRow: { flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   inlineColumn: { flexDirection: 'column' },
   half: { flex: 1 },
   full: { width: '100%' },
-  fullWidthCard: { width: '100%', marginLeft: 0, marginTop: 12 },
-  textarea: { height: 120, textAlignVertical: 'top' },
-  submit: { backgroundColor: '#F4A042', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', marginTop: 6 },
-  submitText: { color: '#fff', fontWeight: '700' },
-  infoCard: { backgroundColor: '#fff', padding: 12, borderRadius: 10, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1, marginBottom: 12 },
-  infoTitle: { fontWeight: '700', marginBottom: 8 },
-  infoText: { color: '#444', marginBottom: 8 },
-  bold: { fontWeight: '700', marginTop: 6 },
-  whatsappBtn: { marginTop: 10, backgroundColor: '#fff', borderRadius: 8, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: '#e6e6e6' },
-  whatsappText: { color: '#3a2b1f', fontWeight: '700' },
-  bullet: { paddingVertical: 6 },
-  qRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8 },
-  qText: { fontWeight: '400' },
-  chev: { color: '#666', marginLeft: 8 },
+  fullWidthCard: { width: '100%', marginLeft: 0, marginTop: 16 },
+  
+  textarea: { height: 100, textAlignVertical: 'top', borderWidth: 1, borderColor: '#E8E8E8', borderRadius: 12, paddingVertical: 16, paddingHorizontal: 24, backgroundColor: '#FFFFFF', color: '#1A1A1A', fontSize: 14, fontFamily: 'Montserrat_400Regular' },
+  
+  // Submit Button
+  submit: { backgroundColor: '#E67E22', paddingVertical: 20, paddingHorizontal: 24, borderRadius: 16, alignItems: 'center', marginTop: 8, shadowColor: '#E67E22', shadowOpacity: 0.3, shadowRadius: 12, elevation: 5 },
+  submitDisabled: { opacity: 0.6 },
+  submitText: { color: '#FFFFFF', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Montserrat_700Bold' },
+  
+  // Info Cards
+  infoCard: { backgroundColor: '#FFFFFF', padding: 20, borderRadius: 24, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 2, marginBottom: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', alignItems: 'center' },
+  infoTitle: { fontWeight: '700', marginBottom: 12, color: '#1A1A1A', textTransform: 'uppercase', fontSize: 11, letterSpacing: 1, fontFamily: 'Montserrat_700Bold' },
+  infoText: { color: '#1A1A1A', marginBottom: 0, fontWeight: '700', fontSize: 15, textAlign: 'center', fontFamily: 'Montserrat_700Bold' },
+  bold: { fontWeight: '700', marginTop: 8 },
+  
+  whatsappBtn: { marginTop: 12, backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 12, paddingHorizontal: 16, alignItems: 'center', borderWidth: 1, borderColor: '#E8E8E8', marginBottom: 12 },
+  whatsappText: { color: '#1A1A1A', fontWeight: '700', fontSize: 14, fontFamily: 'Montserrat_700Bold' },
+  
+  bullet: { paddingVertical: 8, flexDirection: 'row', alignItems: 'flex-start' },
+  
+  qRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  qText: { fontWeight: '600', color: '#1A1A1A', fontSize: 14, flex: 1, fontFamily: 'Montserrat_700Bold' },
+  chev: { color: '#D4AF37', marginLeft: 12, fontWeight: '700' },
   chevOpen: { transform: [{ rotate: '90deg' }] },
-  aText: { color: '#666', paddingBottom: 8 },
+  aText: { color: '#6B6B6B', paddingVertical: 12, paddingHorizontal: 0, fontFamily: 'Montserrat_400Regular', fontSize: 14 },
 });
