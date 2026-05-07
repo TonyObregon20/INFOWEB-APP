@@ -1,11 +1,31 @@
 // app/(tabs)/nosotros.tsx
+import AppHeader from '@/components/app-header';
+import { CormorantGaramond_700Bold, useFonts } from '@expo-google-fonts/cormorant-garamond';
+import { Montserrat_400Regular, Montserrat_700Bold } from '@expo-google-fonts/montserrat';
 import { router } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dimensions, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+SplashScreen.preventAutoHideAsync();
+
 export default function NosotrosScreen() {
+  const [fontsLoaded, fontError] = useFonts({
+    CormorantGaramond_700Bold,
+    Montserrat_400Regular,
+    Montserrat_700Bold,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
+
+  SplashScreen.hideAsync();
+
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <View style={styles.container}>
+      <AppHeader />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
       {/* Encabezado grande con background color similar a la referencia */}
       <View style={styles.headerWrap}>
         <View style={styles.headerInner}>
@@ -74,50 +94,62 @@ export default function NosotrosScreen() {
           <Text style={styles.ctaPrimaryText}>Contactar por WhatsApp</Text>
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', paddingTop: 30 },
+  container: { flex: 1, backgroundColor: '#FDFBF7' },
+  scroll: { flex: 1 },
   content: { paddingBottom: 40 },
-  headerWrap: { backgroundColor: '#F4B36A', paddingBottom: 18 },
-  headerInner: { paddingHorizontal: 16, paddingTop: 28, paddingBottom: 20 },
-  title: { fontSize: 28, fontWeight: '700', color: '#3a2b1f', marginBottom: 8 },
-  lead: { fontSize: 15, color: '#4b3a2d', lineHeight: 22, marginBottom: 14, textAlign: 'justify' },
-  actionsRow: { flexDirection: 'row', gap: 10 },
-  ctaPrimary: { backgroundColor: '#fff', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 999, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, elevation: 3, marginRight: 10 },
-  ctaPrimaryTextDark: { color: '#3a2b1f', fontWeight: '700' },
-  ctaOutline: { borderWidth: 1, borderColor: '#fff', paddingVertical: 12, paddingHorizontal: 18, borderRadius: 999, backgroundColor: 'transparent' },
-  ctaOutlineText: { color: '#fff', fontWeight: '700' },
+  
+  // Header Naranja
+  headerWrap: { backgroundColor: '#E67E22', paddingBottom: 24, paddingTop: 0 },
+  headerInner: { paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32 },
+  title: { fontSize: 36, fontWeight: '700', color: '#FFFFFF', marginBottom: 12, fontFamily: 'CormorantGaramond_700Bold' },
+  lead: { fontSize: 16, color: '#FFFFFF', lineHeight: 24, marginBottom: 20, textAlign: 'left', opacity: 0.9, fontFamily: 'Montserrat_400Regular' },
+  actionsRow: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
+  ctaPrimary: { backgroundColor: '#FFFFFF', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 28, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, elevation: 4 },
+  ctaPrimaryTextDark: { color: '#1A1A1A', fontWeight: '700', fontSize: 14, fontFamily: 'Montserrat_700Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+  ctaOutline: { borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.4)', paddingVertical: 12, paddingHorizontal: 22, borderRadius: 28, backgroundColor: 'transparent' },
+  ctaOutlineText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14, fontFamily: 'Montserrat_700Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
 
-  card: { backgroundColor: '#fff', marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 12, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: '#2b2b2b', marginBottom: 8 },
-  cardText: { color: '#555', lineHeight: 20, marginBottom: 10, textAlign: 'justify' },
-  list: { marginTop: 6 },
-  listItem: { color: '#555', marginBottom: 6 },
+  // Tarjetas
+  card: { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: 24, padding: 20, borderRadius: 32, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
+  cardTitle: { fontSize: 28, fontWeight: '700', color: '#1A1A1A', marginBottom: 12, fontFamily: 'CormorantGaramond_700Bold' },
+  cardText: { color: '#4B4B4B', lineHeight: 22, marginBottom: 14, textAlign: 'left', fontFamily: 'Montserrat_400Regular', fontSize: 15 },
+  list: { marginTop: 12 },
+  listItem: { color: '#4B4B4B', marginBottom: 8, fontSize: 15, fontFamily: 'Montserrat_400Regular' },
 
-  valuesContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
-  statCard: { flex: 1, backgroundColor: '#faf6f2', padding: 14, borderRadius: 10, alignItems: 'center', marginHorizontal: 6 },
-  statNumber: { fontSize: 20, fontWeight: '800', color: '#dd8b3a' },
-  statLabel: { fontSize: 12, color: '#6b6b6b', marginTop: 6, textAlign: 'center' },
+  // Stats Container
+  valuesContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, gap: 8 },
+  statCard: { flex: 1, backgroundColor: '#FDFBF7', padding: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: '#F3F4F6' },
+  statNumber: { fontSize: 28, fontWeight: '800', color: '#E67E22', fontFamily: 'Montserrat_700Bold' },
+  statLabel: { fontSize: 11, color: '#6B6B6B', marginTop: 8, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Montserrat_400Regular' },
 
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginHorizontal: 16, marginTop: 18, color: '#2b2b2b' },
-  gallery: { paddingHorizontal: 16, marginTop: 10 },
-  galleryImage: { width: '100%', height: 160, borderRadius: 12, marginBottom: 12, backgroundColor: '#eee' },
+  // Pills/Tags
+  sectionTitle: { fontSize: 24, fontWeight: '700', marginHorizontal: 16, marginTop: 28, color: '#1A1A1A', fontFamily: 'CormorantGaramond_700Bold' },
+  pillsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-around', marginHorizontal: 16, marginTop: 16, gap: 12 },
+  pill: { backgroundColor: '#FDFBF7', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 24, color: '#1A1A1A', textAlign: 'center', fontSize: 14, fontWeight: '600', borderWidth: 1, borderColor: '#F3F4F6', fontFamily: 'Montserrat_700Bold' },
+
+  // Gallery
+  gallery: { paddingHorizontal: 0, marginTop: 16 },
+  galleryImage: { width: '100%', height: 200, borderRadius: 24, marginBottom: 16, backgroundColor: '#eee', marginHorizontal: 16 },
   galleryPlaceholder: { justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f3f3' },
   placeholderText: { color: '#999' },
-  cardFooter: { backgroundColor: '#fff', margin: 16, borderRadius: 12, padding: 16, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  cardFooterTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  cardFooterText: { color: '#666', marginBottom: 12, textAlign: 'center' },
-  ctaPrimaryWide: { backgroundColor: '#3a2b1f', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8 },
-  ctaPrimaryText: { color: '#fff', fontWeight: '700' },
-  /* carousel dots */
-  dots: { flexDirection: 'row', justifyContent: 'center', marginTop: 8 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#ddd', marginHorizontal: 4 },
-  dotActive: { backgroundColor: '#dd8b3a' },
-  pillsContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginTop: 8 },
-  pill: { backgroundColor: '#faf6f2', paddingVertical: 8, borderRadius: 16, color: '#3a2b1f', textAlign: 'center', width: '48%', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6, marginBottom: 8 },
+
+  // Footer CTA
+  cardFooter: { backgroundColor: '#FFFFFF', margin: 16, borderRadius: 32, padding: 24, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
+  cardFooterTitle: { fontSize: 26, fontWeight: '700', marginBottom: 10, color: '#1A1A1A', fontFamily: 'CormorantGaramond_700Bold' },
+  cardFooterText: { color: '#6B6B6B', marginBottom: 18, textAlign: 'center', fontSize: 15, fontFamily: 'Montserrat_400Regular', lineHeight: 20 },
+  ctaPrimaryWide: { backgroundColor: '#1A1A1A', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 28, minWidth: 240 },
+  ctaPrimaryText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14, textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Montserrat_700Bold' },
+
+  // Carousel dots
+  dots: { flexDirection: 'row', justifyContent: 'center', marginTop: 12, marginBottom: 24 },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#E0E0E0', marginHorizontal: 6 },
+  dotActive: { backgroundColor: '#E67E22' },
 });
 // Simple Carousel component (local, no extra deps)
 function Carousel() {
