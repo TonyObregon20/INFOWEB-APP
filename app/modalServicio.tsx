@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
 import { API_BASE_URL } from '@/constants/api';
 import { getSelectedService } from '@/utils/selectedService';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export const options = {
   headerShown: false,
@@ -25,8 +25,8 @@ export default function ModalServicioScreen() {
     );
   }
 
-  const getCoverImageUrl = (imageId: string | null | undefined): string | null => {
-    if (!imageId) return null;
+  const getCoverImageUrl = (imageId: string | null | undefined): string | undefined => {
+    if (!imageId) return undefined;
     return `${API_BASE_URL}/api/images/${imageId}`;
   };
 

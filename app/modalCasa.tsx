@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { router } from 'expo-router';
 import { API_BASE_URL } from '@/constants/api';
 import { getSelectedCasa } from '@/utils/selectedCasa';
+import { router } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export const options = {
   headerShown: false,
@@ -25,8 +25,8 @@ export default function ModalCasaScreen() {
     );
   }
 
-  const getCoverImageUrl = (imageUrl: string | null | undefined): string | null => {
-    if (!imageUrl) return null;
+  const getCoverImageUrl = (imageUrl: string | null | undefined): string | undefined => {
+    if (!imageUrl) return undefined;
     if (imageUrl.startsWith('http')) return imageUrl;
     return `${API_BASE_URL}${imageUrl}`;
   };

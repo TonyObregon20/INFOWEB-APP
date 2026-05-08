@@ -147,9 +147,9 @@ export default function ContactoScreen() {
       <View style={isSmall ? styles.column : styles.row}>
         <View style={[styles.formCard, isSmall && styles.fullWidthCard]}>
           <Text style={styles.cardTitle}>Solicitar cotización</Text>
-          <TextInput style={styles.input} placeholder="Nombre y apellido *" value={name} onChangeText={setName} />
-          <TextInput style={styles.input} placeholder="Correo electrónico *" value={email} onChangeText={setEmail} keyboardType="email-address" />
-          <TextInput style={styles.input} placeholder="Teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          <TextInput style={styles.input} placeholder="Nombre y apellido *" value={name} onChangeText={setName} placeholderTextColor="#C0C0C0" />
+          <TextInput style={styles.input} placeholder="Correo electrónico *" value={email} onChangeText={setEmail} keyboardType="email-address" placeholderTextColor="#C0C0C0" />
+          <TextInput style={styles.input} placeholder="Teléfono" value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholderTextColor="#C0C0C0" />
 
           <View style={[styles.inlineRow, isSmall && styles.inlineColumn]}>
             {/* ✅ SERVICIO SELECTOR MEJORADO */}
@@ -219,19 +219,21 @@ export default function ContactoScreen() {
                 value={date}
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
+                minimumDate={new Date()}
                 onChange={(event: any, selectedDate?: Date) => {
-                  if (Platform.OS === 'android') {
-                    setShowDatePicker(false);
-                  }
                   if (selectedDate) {
                     setDate(selectedDate);
                   }
+                  // Cerrar picker en ambas plataformas después de seleccionar
+                  setShowDatePicker(false);
                 }}
+                textColor="#1A1A1A"
+                accentColor="#E67E22"
               />
             )}
           </View>
 
-          <TextInput style={[styles.input, styles.textarea]} placeholder="Mensaje (opcional)" value={message} onChangeText={setMessage} multiline numberOfLines={5} />
+          <TextInput style={[styles.input, styles.textarea]} placeholder="Mensaje (opcional)" value={message} onChangeText={setMessage} multiline numberOfLines={5} placeholderTextColor="#C0C0C0" />
 
           <TouchableOpacity 
             style={[styles.submit, sending && styles.submitDisabled]} 

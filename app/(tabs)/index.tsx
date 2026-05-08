@@ -73,42 +73,42 @@ export default function HomeScreen() {
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity 
             style={styles.quickActionItem} 
-            onPress={() => router.push('/Servicios')}
+            onPress={() => router.push('/(tabs)/Servicios')}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionIconText}>🍽️</Text>
+              <Text style={styles.quickActionIconText}>✦</Text>
             </View>
-            <Text style={styles.quickActionLabel}>Banquetes</Text>
+            <Text style={styles.quickActionLabel}>SERVICIOS</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.quickActionItem}
-            onPress={() => router.push('/Servicios')}
+            onPress={() => router.push('/(tabs)/casas')}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionIconText}>🎵</Text>
+              <Text style={styles.quickActionIconText}>⌂</Text>
             </View>
-            <Text style={styles.quickActionLabel}>Música</Text>
+            <Text style={styles.quickActionLabel}>CASAS</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.quickActionItem}
-            onPress={() => router.push('/casas')}
+            onPress={() => router.push('/(tabs)/nosotros')}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionIconText}>🏡</Text>
+              <Text style={styles.quickActionIconText}>ⓘ</Text>
             </View>
-            <Text style={styles.quickActionLabel}>Casas</Text>
+            <Text style={styles.quickActionLabel}>NOSOTROS</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={styles.quickActionItem}
-            onPress={() => router.push('/Servicios')}
+            onPress={() => router.push('/(tabs)/contacto')}
           >
             <View style={styles.quickActionIcon}>
-              <Text style={styles.quickActionIconText}>📸</Text>
+              <Text style={styles.quickActionIconText}>☎</Text>
             </View>
-            <Text style={styles.quickActionLabel}>Fotos</Text>
+            <Text style={styles.quickActionLabel}>CONTACTANOS</Text>
           </TouchableOpacity>
         </View>
       </View>
